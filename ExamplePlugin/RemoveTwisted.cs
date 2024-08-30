@@ -86,7 +86,7 @@ namespace ExamplePlugin
 			}
 			EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
 			DirectorAPI.Helpers.TryApplyChangesNow();
-
+            if(this.timer != null) { this.timer.Stop();this.timer.Dispose(); }
 			this.timer = new Timer();
             this.timer.Interval = 10000;//10sec
             this.timer.Elapsed += removeTwistedTimer;
