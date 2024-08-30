@@ -32,6 +32,7 @@ namespace ExamplePlugin
     // BaseUnityPlugin itself inherits from MonoBehaviour,
     // so you can use this as a reference for what you can declare and use in your plugin class
     // More information in the Unity Docs: https://docs.unity3d.com/ScriptReference/MonoBehaviour.html
+    [R2API.Utils.NetworkCompatibility(R2API.Utils.CompatibilityLevel.NoNeedForSync,R2API.Utils.VersionStrictness.DifferentModVersionsAreOk)]
     public class RemoveTwisted : BaseUnityPlugin
     {
         // The Plugin GUID should be a unique ID for this plugin,
@@ -61,6 +62,11 @@ namespace ExamplePlugin
 
         }
 
+		private void DirectorAPI_MonsterActions(DccsPool pool, List<DirectorAPI.DirectorCardHolder> list, DirectorAPI.StageInfo info)
+		{
+            
+		}
+
 		private void removedTwisted(Stage s)
         {
 			Logger.LogDebug("Get Current Elite tiers");
@@ -70,100 +76,72 @@ namespace ExamplePlugin
 			{
 				foreach (var eliteDef in eliteR.availableDefs)
 				{
-					Logger.LogDebug(eliteDef.name);
+					//Logger.LogDebug(eliteDef.name);
 					if (eliteDef.name == "edBead")
 					{
-						twisted = eliteDef;
-						Logger.LogDebug("found the fuckers");
+						eliteR.costMultiplier = 999;//set cost high to prevent spawn
+						Logger.LogDebug("found the fuckers and set their costMult to 999");
 					}
 				}
-				if (twisted != null)
-				{
-					eliteR.availableDefs.Remove(twisted);
-					Logger.LogDebug("Removed from availableDefs");
-				}
 			}
-            if (twisted != null)
-            {
-                Logger.LogDebug("Attempting CombatDirector EliteTiers Override");
-                EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
-                Logger.LogDebug("Removed the worst elite type in the game");
-            }
+			EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
+			DirectorAPI.Helpers.TryApplyChangesNow();
 
-            this.timer = new Timer();
-            this.timer.Interval = 30000;//30sec
+			this.timer = new Timer();
+            this.timer.Interval = 10000;//10sec
             this.timer.Elapsed += removeTwistedTimer;
             this.timer.Enabled = true;
 
 
 		}
-
         private void removeTwistedTimer(object sender, ElapsedEventArgs e)
         {
 			Log.Init(Logger);
-			Logger.LogDebug("30 sec elapsded,checking eliteDefs...");
+			Logger.LogDebug("10 sec elapsded,checking eliteDefs...");
 			CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
 			EliteDef twisted = null;
 			foreach (var eliteR in currElites)
 			{
-				foreach (var eliteDef in eliteR.availableDefs)
-				{
-					Logger.LogDebug(eliteDef.name);
-					if (eliteDef.name == "edBead")
+					foreach (var eliteDef in eliteR.availableDefs)
 					{
-						twisted = eliteDef;
-						Logger.LogDebug("found the fuckers");
+						//Logger.LogDebug(eliteDef.name);
+						if (eliteDef.name == "edBead")
+						{
+							eliteR.costMultiplier = 999;//set cost high to prevent spawn
+							Logger.LogDebug("found the fuckers and set their costMult to 999");
+						}
 					}
 				}
-				if (twisted != null)
-				{
-					eliteR.availableDefs.Remove(twisted);
-					Logger.LogDebug("Removed from availableDefs");
-				}
-			}
-			if (twisted != null)
-			{
-				Logger.LogDebug("Attempting CombatDirector EliteTiers Override");
 				EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
-				Logger.LogDebug("Removed the worst elite type in the game");
+				DirectorAPI.Helpers.TryApplyChangesNow();
 			}
-		}
 
 		// The Update() method is run on every frame of the game.
 		private void Update()
         {
             // This if statement checks if the player has currently pressed F2.
-            if (Input.GetKeyDown(KeyCode.F2))
-            {
+            if (Input.GetKeyDown(KeyCode.F2)) {
+
+                
                 Logger.LogDebug("Keybind removing twisted");
                 Logger.LogDebug("Get Current Elite tiers");
-              CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
-                EliteDef twisted = null;
-                foreach(var eliteR in currElites)
+                CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
+                foreach (var eliteR in currElites)
                 {
-                    foreach(var eliteDef in eliteR.availableDefs)
+                    foreach (var eliteDef in eliteR.availableDefs)
                     {
                         Logger.LogDebug(eliteDef.name);
-                        if(eliteDef.name == "edBead")
+                        if (eliteDef.name == "edBead")
                         {
-                            twisted = eliteDef;
+							eliteR.costMultiplier = 999;//set cost to infinite so it doesnt spawn
                             Logger.LogDebug("found the fuckers");
                         }
                     }
-                    if(twisted != null)
-                    {
-                        eliteR.availableDefs.Remove(twisted);
-						Logger.LogDebug("Removed from availableDefs");
-					}
                 }
-                if (twisted != null)
-                {
-                    Logger.LogDebug("Attempting CombatDirector EliteTiers Override");
-                    EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
-                    Logger.LogDebug("Removed the worst elite type in the game");
-                }
+                EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
+                DirectorAPI.Helpers.TryApplyChangesNow();
 
-			}
+            }
         }
     }
 }
