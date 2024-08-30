@@ -43,7 +43,7 @@ namespace ExamplePlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Noevain";
         public const string PluginName = "RemoveTwisted";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
 		private Timer timer;
         // We need our item definition to persist through our functions, and therefore make it a class field.
 
@@ -69,28 +69,38 @@ namespace ExamplePlugin
 
 		private void removedTwisted(Stage s)
         {
-			Logger.LogDebug("Get Current Elite tiers");
-			CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
-			EliteDef twisted = null;
-			foreach (var eliteR in currElites)
-			{
-				foreach (var eliteDef in eliteR.availableDefs)
-				{
-					//Logger.LogDebug(eliteDef.name);
-					if (eliteDef.name == "edBead")
-					{
-						eliteR.costMultiplier = 999;//set cost high to prevent spawn
-						Logger.LogDebug("found the fuckers and set their costMult to 999");
-					}
-				}
-			}
-			EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
-			DirectorAPI.Helpers.TryApplyChangesNow();
-            if(this.timer != null) { this.timer.Stop();this.timer.Dispose(); }
-			this.timer = new Timer();
-            this.timer.Interval = 10000;//10sec
-            this.timer.Elapsed += removeTwistedTimer;
-            this.timer.Enabled = true;
+			if (this.timer != null) { this.timer.Stop(); this.timer.Dispose(); }//Dispose the timer on stage start to prevent unwanted call
+			Logger.LogDebug($"stage name:{s.sceneDef.baseSceneName} resolved to {DirectorAPI.GetStageEnumFromSceneDef(s.sceneDef).ToString()}");
+			if (DirectorAPI.GetStageEnumFromSceneDef(s.sceneDef) == DirectorAPI.Stage.Bazaar)
+            {
+                Logger.LogDebug("In the bazaar,do not access the director or this will crash the game for some reason");
+                return;
+            }
+            else
+            {
+                Logger.LogDebug("Get Current Elite tiers");
+                CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
+                EliteDef twisted = null;
+                foreach (var eliteR in currElites)
+                {
+                    foreach (var eliteDef in eliteR.availableDefs)
+                    {
+                        //Logger.LogDebug(eliteDef.name);
+                        if (eliteDef.name == "edBead")
+                        {
+                            eliteR.costMultiplier = 999;//set cost high to prevent spawn
+                            Logger.LogDebug("found the fuckers and set their costMult to 999");
+                        }
+                    }
+                }
+                EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
+                DirectorAPI.Helpers.TryApplyChangesNow();
+                if (this.timer != null) { this.timer.Stop(); this.timer.Dispose(); }
+                this.timer = new Timer();
+                this.timer.Interval = 10000;//10sec
+                this.timer.Elapsed += removeTwistedTimer;
+                this.timer.Enabled = true;
+            }
 
 
 		}
