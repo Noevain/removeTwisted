@@ -1,9 +1,12 @@
 using BepInEx;
 using HarmonyLib;
+using IL.RoR2.ContentManagement;
 using R2API;
+using R2API.ContentManagement;
 using RoR2;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Timers;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -43,115 +46,36 @@ namespace ExamplePlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Noevain";
         public const string PluginName = "RemoveTwisted";
-        public const string PluginVersion = "1.0.1";
-		private Timer timer;
+        public const string PluginVersion = "2.0.0";
         // We need our item definition to persist through our functions, and therefore make it a class field.
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
         {
-			// Init our logging class so that we can properly log for debugging
-			Log.Init(Logger);
-            // First let's define our item
-            Logger.LogInfo("Hooking into onServerStageBegin");
-            //DirectorAPI.MonsterActions += DirectorAPI_MonsterActions;
-            Stage.onServerStageBegin += removedTwisted;
-            // But now we have defined an item, but it doesn't do anything yet. So we'll need to define that ourselves.
-            //GlobalEventManager.onCharacterDeathGlobal += GlobalEventManager_onCharacterDeathGlobal;
-            
+            // Init our logging class so that we can properly log for debugging
+            Log.Init(Logger);
 
+            Logger.LogInfo("Hooking into CombatDirector_Spawn");
+			On.RoR2.CombatDirector.Spawn += CombatDirector_Spawn;
+            
         }
 
-		private void DirectorAPI_MonsterActions(DccsPool pool, List<DirectorAPI.DirectorCardHolder> list, DirectorAPI.StageInfo info)
+		private bool CombatDirector_Spawn(On.RoR2.CombatDirector.orig_Spawn orig, CombatDirector self, SpawnCard spawnCard, EliteDef eliteDef, Transform spawnTarget, DirectorCore.MonsterSpawnDistance spawnDistance, bool preventOverhead, float valueMultiplier, DirectorPlacementRule.PlacementMode placementMode)
 		{
-            
-		}
-
-		private void removedTwisted(Stage s)
-        {
-			if (this.timer != null) { this.timer.Stop(); this.timer.Dispose(); }//Dispose the timer on stage start to prevent unwanted call
-			Logger.LogDebug($"stage name:{s.sceneDef.baseSceneName} resolved to {DirectorAPI.GetStageEnumFromSceneDef(s.sceneDef).ToString()}");
-			if (DirectorAPI.GetStageEnumFromSceneDef(s.sceneDef) == DirectorAPI.Stage.Bazaar)
+			if (eliteDef is not null && eliteDef.name == "edBead")
             {
-                Logger.LogDebug("In the bazaar,do not access the director or this will crash the game for some reason");
-                return;
-            }
-            else
-            {
-                Logger.LogDebug("Get Current Elite tiers");
-                CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
-                EliteDef twisted = null;
-                foreach (var eliteR in currElites)
-                {
-                    foreach (var eliteDef in eliteR.availableDefs)
-                    {
-                        //Logger.LogDebug(eliteDef.name);
-                        if (eliteDef.name == "edBead")
-                        {
-                            eliteR.costMultiplier = 999;//set cost high to prevent spawn
-                            Logger.LogDebug("found the fuckers and set their costMult to 999");
-                        }
-                    }
-                }
-                EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
-                DirectorAPI.Helpers.TryApplyChangesNow();
-                if (this.timer != null) { this.timer.Stop(); this.timer.Dispose(); }
-                this.timer = new Timer();
-                this.timer.Interval = 10000;//10sec
-                this.timer.Elapsed += removeTwistedTimer;
-                this.timer.Enabled = true;
-            }
-
-
-		}
-        private void removeTwistedTimer(object sender, ElapsedEventArgs e)
-        {
-			Log.Init(Logger);
-			Logger.LogDebug("10 sec elapsded,checking eliteDefs...");
-			CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
-			EliteDef twisted = null;
-			foreach (var eliteR in currElites)
-			{
-					foreach (var eliteDef in eliteR.availableDefs)
-					{
-						//Logger.LogDebug(eliteDef.name);
-						if (eliteDef.name == "edBead")
-						{
-							eliteR.costMultiplier = 999;//set cost high to prevent spawn
-							Logger.LogDebug("found the fuckers and set their costMult to 999");
-						}
-					}
-				}
-				EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
-				DirectorAPI.Helpers.TryApplyChangesNow();
+                Logger.LogDebug("Director attempted to spawn a twisted");
+                
+                eliteDef = EliteCatalog.eliteDefs.Where(elite => elite.name == "edPoison").First();
+                Logger.LogDebug($"Replaced with:{eliteDef.name}");
 			}
+            return orig(self, spawnCard,eliteDef,spawnTarget,spawnDistance,preventOverhead,valueMultiplier,placementMode);
+		}
 
 		// The Update() method is run on every frame of the game.
 		private void Update()
         {
-            // This if statement checks if the player has currently pressed F2.
-            if (Input.GetKeyDown(KeyCode.F2)) {
-
-                
-                Logger.LogDebug("Keybind removing twisted");
-                Logger.LogDebug("Get Current Elite tiers");
-                CombatDirector.EliteTierDef[] currElites = EliteAPI.GetCombatDirectorEliteTiers();
-                foreach (var eliteR in currElites)
-                {
-                    foreach (var eliteDef in eliteR.availableDefs)
-                    {
-                        Logger.LogDebug(eliteDef.name);
-                        if (eliteDef.name == "edBead")
-                        {
-							eliteR.costMultiplier = 999;//set cost to infinite so it doesnt spawn
-                            Logger.LogDebug("found the fuckers");
-                        }
-                    }
-                }
-                EliteAPI.OverrideCombatDirectorEliteTiers(currElites);
-                DirectorAPI.Helpers.TryApplyChangesNow();
-
-            }
+          
         }
     }
 }

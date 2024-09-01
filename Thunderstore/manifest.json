@@ -1,6 +1,6 @@
 ﻿{
 	"name": "RemoveTwisted",
-	"version_number": "1.0.1",
+	"version_number": "2.0.0",
 	"website_url": "https://github.com/Noevain/removeTwisted",
 	"description": "Remove the worst elite type in the game",
 	"dependencies": [
